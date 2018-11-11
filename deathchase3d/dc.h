@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <string.h>
-#include <SDL.h>
+#include <SDL/SDL.h>
 
 typedef struct _Colour                      // Colour descriptor structure
 {
