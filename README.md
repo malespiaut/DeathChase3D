@@ -1,5 +1,4 @@
-                                            Deathchase 3D
-                                            -------------
+# Deathchase 3D
 
 Written by Paul Robson (ambling along slowly) in Autumn 2002. This took ages, largely because I got
 fed up with it and couldn't be bothered to finish it.
