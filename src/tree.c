@@ -17,8 +17,8 @@
 
 #include "dc.h"
 
-static void _TREEAddNewTree(OBJECT *t,TREELIST *List,int yPos);
-static OBJECT *_TREEDeleteFromList(OBJECT *t);
+static void _TREEAddNewTree(OBJECT* t, TREELIST* List, int yPos);
+static OBJECT* _TREEDeleteFromList(OBJECT* t);
 
 //
 //
@@ -26,17 +26,18 @@ static OBJECT *_TREEDeleteFromList(OBJECT *t);
 //              always sorted by furthest first.
 //
 //
-void TREEInitialise(TREELIST *List,int n)
+void
+TREEInitialise(TREELIST* List, int n)
 {
-    int i;
-    ASSERT(List != NULL);
-    ASSERT(n > 0 && n <= MAXTREES);
-    List->TreeCount = n;                    // Save number of trees
-    List->First = NULL;                     // No trees in the list
-    for (i = 0;i < n;i++)                   // Clear all "trees in use" flag.
-        _TREEAddNewTree(&(List->Trees[i]),  // Add a new tree to the list
-                        List,
-                        (40+60*(i+1)/n)*MAXY/100);
+  int i;
+  ASSERT(List != NULL);
+  ASSERT(n > 0 && n <= MAXTREES);
+  List->TreeCount = n;                 // Save number of trees
+  List->First = NULL;                  // No trees in the list
+  for (i = 0; i < n; i++)              // Clear all "trees in use" flag.
+    _TREEAddNewTree(&(List->Trees[i]), // Add a new tree to the list
+                    List,
+                    (40 + 60 * (i + 1) / n) * MAXY / 100);
 }
 
 //
@@ -44,22 +45,25 @@ void TREEInitialise(TREELIST *List,int n)
 //                              Add a new list in
 //
 //
-static void _TREEAddNewTree(OBJECT *t,TREELIST *List,int yPos)
+static void
+_TREEAddNewTree(OBJECT* t, TREELIST* List, int yPos)
 {
-    int x;
-    ASSERT(t != NULL);
-    ASSERT(List != NULL);
-    if (List->First != NULL)                // If not the first, check legitimate order
-        if (yPos < List->First->y) ERROR();
-    x = (int)pow(MAXX,1.8);                 // Horizontal position
-    t->x = (rand()%x)*MAXX/x;
-    ASSERT(t->x <= MAXX);
-    if (rand()%2 == 0) t->x = -t->x;
-    t->y = yPos;                            // Vertical position
-    t->Next = List->First;                  // Link in to list
-    List->First = t;
-    t->MarkDel = 0;                         // Not due to be deleted
-    t->Type = GR_TREE;
+  int x;
+  ASSERT(t != NULL);
+  ASSERT(List != NULL);
+  if (List->First != NULL) // If not the first, check legitimate order
+    if (yPos < List->First->y)
+      ERROR();
+  x = (int)pow(MAXX, 1.8); // Horizontal position
+  t->x = (rand() % x) * MAXX / x;
+  ASSERT(t->x <= MAXX);
+  if (rand() % 2 == 0)
+    t->x = -t->x;
+  t->y = yPos;           // Vertical position
+  t->Next = List->First; // Link in to list
+  List->First = t;
+  t->MarkDel = 0; // Not due to be deleted
+  t->Type = GR_TREE;
 }
 
 //
@@ -67,34 +71,37 @@ static void _TREEAddNewTree(OBJECT *t,TREELIST *List,int yPos)
 //      Redraw all the trees between y1 and y2
 //
 //
-void TREEDrawAll(TREELIST *t,int y1,int y2)
+void
+TREEDrawAll(TREELIST* t, int y1, int y2)
 {
-    OBJECT *tl;
-    int i;
-    ASSERT(t != NULL);
-    if (y1 == y2) return;                   // Nothing to do :)
-    tl = t->First;                          // Point to first in list
-    ASSERT(tl != NULL);
-    while (tl != NULL)
+  OBJECT* tl;
+  int i;
+  ASSERT(t != NULL);
+  if (y1 == y2)
+    return;      // Nothing to do :)
+  tl = t->First; // Point to first in list
+  ASSERT(tl != NULL);
+  while (tl != NULL)
+  {
+    tl->MarkDel = 0;      // Not deleted
+    if (tl->Next != NULL) // Validate the list order
+      if (tl->y < tl->Next->y)
+        ERROR();
+    if (tl->y >= y1 && tl->y < y2) // if in range
     {
-        tl->MarkDel = 0;                    // Not deleted
-        if (tl->Next != NULL)               // Validate the list order
-            if (tl->y < tl->Next->y) ERROR();
-        if (tl->y >= y1 && tl->y < y2)      // if in range
-        {
-            ASSERT(tl->Type == GR_TREE);
-            DRAWObject(tl);                 // And draw it
-            if (tl->OnScreen == 0)          // If not on screen
-                        tl->MarkDel = 1;    // Delete it the next time around
-        }
-        if (tl->y < 0 || tl->y > MAXY)      // Kill if out of range.
-                            tl->MarkDel = 1;
-        tl = tl->Next;                      // Work through the list
+      ASSERT(tl->Type == GR_TREE);
+      DRAWObject(tl);        // And draw it
+      if (tl->OnScreen == 0) // If not on screen
+        tl->MarkDel = 1;     // Delete it the next time around
     }
-    t->First=_TREEDeleteFromList(t->First); // Physically remove from the list
-    for (i = 0;i < t->TreeCount;i++)        // Any deleted ones recreate.
-        if (t->Trees[i].MarkDel)
-            _TREEAddNewTree(&(t->Trees[i]),t,MAXY);
+    if (tl->y < 0 || tl->y > MAXY) // Kill if out of range.
+      tl->MarkDel = 1;
+    tl = tl->Next; // Work through the list
+  }
+  t->First = _TREEDeleteFromList(t->First); // Physically remove from the list
+  for (i = 0; i < t->TreeCount; i++)        // Any deleted ones recreate.
+    if (t->Trees[i].MarkDel)
+      _TREEAddNewTree(&(t->Trees[i]), t, MAXY);
 }
 
 //
@@ -102,19 +109,21 @@ void TREEDrawAll(TREELIST *t,int y1,int y2)
 //                          Recursive list element deleter
 //
 //
-static OBJECT *_TREEDeleteFromList(OBJECT *t)
+static OBJECT*
+_TREEDeleteFromList(OBJECT* t)
 {
-    if (t == NULL) return NULL;             // Empty list
-    if (t->MarkDel)                         // Being deleted
-    {
-        return _TREEDeleteFromList(t->Next);// Delete it out.
-    }
-    else                                    // Not being deleted ?
-    {
-        t->Next =                           // Recursively delete from the rest of the list
-            _TREEDeleteFromList(t->Next);
-        return t;                           // Return this one
-    }
+  if (t == NULL)
+    return NULL;  // Empty list
+  if (t->MarkDel) // Being deleted
+  {
+    return _TREEDeleteFromList(t->Next); // Delete it out.
+  }
+  else // Not being deleted ?
+  {
+    t->Next = // Recursively delete from the rest of the list
+      _TREEDeleteFromList(t->Next);
+    return t; // Return this one
+  }
 }
 
 //
@@ -122,27 +131,30 @@ static OBJECT *_TREEDeleteFromList(OBJECT *t)
 //                                  Move All Trees, Check for collision
 //
 //
-int TREEMoveAll(TREELIST *t,int xMove,int yMove)
+int
+TREEMoveAll(TREELIST* t, int xMove, int yMove)
 {
-    OBJECT *tl;
-    int n,Crashed = 0;
-    ASSERT(t != NULL);
-    tl = t->First;                          // Point to first in list
-    ASSERT(tl != NULL);
-    while (tl != NULL)
+  OBJECT* tl;
+  int n, Crashed = 0;
+  ASSERT(t != NULL);
+  tl = t->First; // Point to first in list
+  ASSERT(tl != NULL);
+  while (tl != NULL)
+  {
+    if (tl->Next != NULL) // Validate the list order
+      if (tl->y < tl->Next->y)
+        ERROR();
+    tl->y -= yMove;
+    if (tl->y <= 0) // Tree gone through the front
     {
-        if (tl->Next != NULL)               // Validate the list order
-            if (tl->y < tl->Next->y) ERROR();
-        tl->y -= yMove;
-        if (tl->y <= 0)                     // Tree gone through the front
-        {
-            n = abs(tl->x) * 100 / MAXX;    // How far off centre ?
-            if (n < Glo.CollidePercent) Crashed = 1;
-        }        
-        tl->x -= xMove;
-        tl = tl->Next;                      // Work through the list
+      n = abs(tl->x) * 100 / MAXX; // How far off centre ?
+      if (n < Glo.CollidePercent)
+        Crashed = 1;
     }
-    return Crashed;
+    tl->x -= xMove;
+    tl = tl->Next; // Work through the list
+  }
+  return Crashed;
 }
 
 //
@@ -151,18 +163,19 @@ int TREEMoveAll(TREELIST *t,int xMove,int yMove)
 //
 //
 
-int TREECheckMissileHit(int x,int y,TREELIST *t)
+int
+TREECheckMissileHit(int x, int y, TREELIST* t)
 {
-    OBJECT *tl;
-    ASSERT(t != NULL);
-    tl = t->First;                          // Work through trees
-    while (tl != NULL)
-    {
-        if (TREEHasHit(x,y,tl->x,tl->y))    // Return true if hit
-                                        return 1;
-        tl = tl->Next;        
-    }
-    return 0;
+  OBJECT* tl;
+  ASSERT(t != NULL);
+  tl = t->First; // Work through trees
+  while (tl != NULL)
+  {
+    if (TREEHasHit(x, y, tl->x, tl->y)) // Return true if hit
+      return 1;
+    tl = tl->Next;
+  }
+  return 0;
 }
 
 //
@@ -170,12 +183,14 @@ int TREECheckMissileHit(int x,int y,TREELIST *t)
 //                                Check if missile has hit an object
 //
 //
-int TREEHasHit(int xm,int ym,int xo,int yo)
+int
+TREEHasHit(int xm, int ym, int xo, int yo)
 {
-    int x,y;
-    x = abs(xm-xo);y = abs(ym-yo);
-    if (y < Glo.Precision*MAXY/35/100)
-        if (x < Glo.Precision*MAXX/35/100) return 1;
-    return 0;
+  int x, y;
+  x = abs(xm - xo);
+  y = abs(ym - yo);
+  if (y < Glo.Precision * MAXY / 35 / 100)
+    if (x < Glo.Precision * MAXX / 35 / 100)
+      return 1;
+  return 0;
 }
-
